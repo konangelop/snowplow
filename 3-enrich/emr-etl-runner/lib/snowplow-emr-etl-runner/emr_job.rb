@@ -699,31 +699,30 @@ module Snowplow
         }.map { |s| s.args[1] }
       end
 
-      Contract String, String => Elasticity::ScriptStep
+      Contract String, String => Elasticity::CustomJarStep
       def get_rmr_step(location, bucket)
-        script = "#{bucket}common/emr/snowplow-hadoop-fs-rmr.sh"
-        step = Elasticity::ScriptStep.new(@jobflow.region, script, location)
-        step.name << ": Recursively removing content from #{location}"
-        step
+        get_check_step("Recursively removing content from #{location}", location,
+          "#{bucket}common/emr/snowplow-hadoop-fs-rmr.sh")
       end
 
       # Builds a script step checking that there is data in the processing bucket
-      Contract String, String => Elasticity::ScriptStep
+      Contract String, String => Elasticity::CustomJarStep
       def get_check_data_to_process_step(location, bucket)
         get_check_step("Checking that there is data to process in #{location}", location,
           "#{bucket}common/emr/snowplow-check-data-to-process.sh")
       end
 
       # Builds a script step checking that the specified location is empty
-      Contract String, String => Elasticity::ScriptStep
+      Contract String, String => Elasticity::CustomJarStep
       def get_check_dir_empty_step(location, bucket)
         get_check_step("Checking that #{location} is empty", location,
           "#{bucket}common/emr/snowplow-check-dir-empty.sh")
       end
 
-      Contract String, String, String => Elasticity::ScriptStep
+      Contract String, String, String => Elasticity::CustomJarStep
       def get_check_step(name, location, script)
-        step = Elasticity::ScriptStep.new(@jobflow.region, script, location)
+        step = Elasticity::CustomJarStep.new("s3://#{@jobflow.region}.elasticmapreduce/libs/script-runner/script-runner.jar")
+        step.arguments = [script, location]
         step.name << ": #{name}"
         step
       end
