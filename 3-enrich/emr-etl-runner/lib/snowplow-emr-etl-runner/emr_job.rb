@@ -297,7 +297,7 @@ module Snowplow
             "Enrich Raw Events",
             assets[:enrich],
             "enrich.hadoop.EtlJob",
-            { :in     => glob_path(ENRICH_STEP_INPUT),
+            { :in     => glob_path(ENRICH_STEP_INPUT) + '/*',
               :good   => ENRICH_STEP_OUTPUT,
               :bad    => partition_by_run(csbe[:bad],    run_id),
               :errors => partition_by_run(csbe[:errors], run_id, config[:enrich][:continue_on_unexpected_error])
