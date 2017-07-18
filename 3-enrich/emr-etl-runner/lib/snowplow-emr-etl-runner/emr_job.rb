@@ -529,6 +529,8 @@ module Snowplow
           })
           .reject { |k, v| v.nil? } # Because folders[:errors] may be empty
 
+        arguments['tool.partialok'] = ''
+
         # Now create the Hadoop MR step for the jobflow
         scalding_step = ScaldingStep.new(jar, "#{JAVA_PACKAGE}.#{main_class}", arguments)
         scalding_step.name << ": #{step_name}"
