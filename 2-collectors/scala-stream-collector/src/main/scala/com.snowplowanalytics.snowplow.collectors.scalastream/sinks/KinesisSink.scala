@@ -10,37 +10,31 @@
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the Apache License Version 2.0 for the specific language governing permissions and limitations there under.
  */
-package com.snowplowanalytics.snowplow
-package collectors
-package scalastream
+package com.snowplowanalytics.snowplow.collectors.scalastream
 package sinks
 
 // Java
 import java.nio.ByteBuffer
-import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ScheduledExecutorService
 
 // Amazon
 import com.amazonaws.services.kinesis.model._
-import com.amazonaws.AmazonServiceException
 import com.amazonaws.auth.{
   EnvironmentVariableCredentialsProvider,
   BasicAWSCredentials,
-  ClasspathPropertiesFileCredentialsProvider,
   InstanceProfileCredentialsProvider
 }
 import com.amazonaws.services.kinesis.AmazonKinesisClient
 
 // Concurrent libraries
-import scala.concurrent.{Future,Await,TimeoutException}
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 // Scala
 import scala.util.{Success, Failure}
 import scala.collection.JavaConverters._
 
-// Snowplow
-import CollectorPayload.thrift.model1.CollectorPayload
+import model._
 
 /**
  * KinesisSink companion object with factory method
@@ -64,7 +58,7 @@ object KinesisSink {
     // When the application is shut down, stop accepting incoming requests
     // and send all stored events
     Runtime.getRuntime.addShutdownHook(new Thread {
-      override def run() {
+      override def run(): Unit = {
         shuttingDown = true
         ks.EventStorage.flush()
         ks.executorService.shutdown()
@@ -103,9 +97,9 @@ class KinesisSink private (config: CollectorConfig, inputType: InputType.InputTy
    *
    * @param interval When to schedule the next flush
    */
-  def scheduleFlush(interval: Long = TimeThreshold) {
+  def scheduleFlush(interval: Long = TimeThreshold): Unit = {
     executorService.schedule(new Thread {
-      override def run() {
+      override def run(): Unit = {
         val lastFlushed = EventStorage.getLastFlushTime()
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastFlushed >= TimeThreshold) {
@@ -222,17 +216,17 @@ class KinesisSink private (config: CollectorConfig, inputType: InputType.InputTy
     Nil
   }
 
-  def scheduleBatch(batch: List[(ByteBuffer, String)], lastBackoff: Long = minBackoff) {
+  def scheduleBatch(batch: List[(ByteBuffer, String)], lastBackoff: Long = minBackoff): Unit = {
     val nextBackoff = getNextBackoff(lastBackoff)
     executorService.schedule(new Thread {
-      override def run() {
+      override def run(): Unit = {
         sendBatch(batch, nextBackoff)
       }
     }, lastBackoff, MILLISECONDS)
   }
 
   // TODO: limit max retries?
-  def sendBatch(batch: List[(ByteBuffer, String)], nextBackoff: Long = minBackoff) {
+  def sendBatch(batch: List[(ByteBuffer, String)], nextBackoff: Long = minBackoff): Unit = {
     if (batch.size > 0) {
       log.info(s"Writing ${batch.size} Thrift records to Kinesis stream ${streamName}")
       val putData = for {
